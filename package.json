@@ -1,15 +1,16 @@
 {
   "name": "prog2002-a2",
   "version": "1.0.0",
-  "main": "crowdfunding_db.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node crowdfunding_db.js"
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
+    "express": "^4.21.0",
     "mysql2": "^3.11.2"
-  }
+  },
+  "description": ""
 }
