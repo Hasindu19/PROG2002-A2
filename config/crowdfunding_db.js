@@ -1,16 +1,22 @@
-const mysql = require("mysql2");
+const { Sequelize } = require("sequelize");
 
-//create a connection
-const connection = mysql.createConnection({
+// Create a new Sequelize instance for your MySQL database
+const sequelize = new Sequelize("crowdfunding_db", "root", "", {
   host: "localhost",
-  user: "root",
-  password: "",
-  database: "crowdfunding_db",
+  dialect: "mysql",
   port: "3306",
 });
 
-//To connect to the databse
-connection.connect((err) => {
-  if (err) throw err;
-  console.log("Connection Successful!");
-});
+// Test the connection to ensure it's working
+sequelize
+  .authenticate()
+  .then(() => {
+    console.log(
+      "Connection to the database has been established successfully."
+    );
+  })
+  .catch((err) => {
+    console.error("Unable to connect to the database:", err);
+  });
+
+module.exports = sequelize; // Export the Sequelize instance
