@@ -24,7 +24,7 @@ function displayFundraisers(fundraisers) {
     fundraiserDiv.innerHTML = `
             <div class="team-items">
                 <div class="team-user">
-                    <img src="assets/images/team/1.jpg" alt="${fundraiser.CAPTION}">
+                    <img src="${fundraiser.IMAGE_URL}" alt="${fundraiser.CAPTION}">
                 </div>
                 <div class="team-user-social">
                     <ol>
