@@ -26,7 +26,7 @@
               <div class="menu">
                 <ul>
                   <li><a href="index.html">Home</a></li>
-                  <li><a href="about-us.html">About Us</a></li>
+                  <li><a href="search.html">Search Fundraisers</a></li>
                   <li><a href="services.html">Services</a></li>
                   <li><a href="contact-us.html">Contact Us</a></li>
                 </ul>
@@ -116,7 +116,7 @@
               $('#results').append('<div class="alert alert-danger">No fundraisers found.</div>');
             } else {
               data.forEach(fundraiser => {
-                $('#results').append(`<div><a href="about-us.html?id=${fundraiser.FUNDRAISER_ID}">${fundraiser.CAPTION}</a></div>`);
+                $('#results').append(`<div><a href="fundraiser.html?id=${fundraiser.FUNDRAISER_ID}">${fundraiser.CAPTION}</a></div>`);
               });
             }
           })

@@ -1,12 +1,9 @@
-// models/Fundraiser.js
-
 const { DataTypes } = require("sequelize");
-const sequelize = require("../config/crowdfunding_db"); // Import the Sequelize instance
+const sequelize = require("../config/crowdfunding_db");
 
 const Fundraiser = sequelize.define(
   "Fundraiser",
   {
-    // Changed id to FUNDRAISER_ID
     FUNDRAISER_ID: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -40,14 +37,19 @@ const Fundraiser = sequelize.define(
     CATEGORY_ID: {
       type: DataTypes.INTEGER,
       references: {
-        model: "CATEGORY", // Refers to the 'CATEGORY' table
-        key: "CATEGORY_ID", // Adjust the key if needed
+        model: "CATEGORY",
+        key: "CATEGORY_ID",
       },
+    },
+    IMAGE_URL: {
+      // New field for image URL
+      type: DataTypes.STRING,
+      allowNull: true, // Optional field
     },
   },
   {
-    tableName: "FUNDRAISER", // Specify the table name in the DB
-    timestamps: false, // Disable automatic timestamps if not needed
+    tableName: "FUNDRAISER",
+    timestamps: false,
   }
 );
 
