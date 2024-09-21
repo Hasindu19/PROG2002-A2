@@ -1,8 +1,8 @@
 const express = require("express");
 const cors = require("cors"); // Add CORS middleware
-const sequelize = require("./config/crowdfunding_db"); // Import the Sequelize instance
 const { Fundraiser, Category } = require("./models"); // Import models
 const { Op } = require("sequelize"); // Import Sequelize Op for search queries
+const pool = require("./config/crowdfunding_db"); // Adjust this path to where your pool is defined
 
 const app = express();
 app.use(express.json());
@@ -10,24 +10,15 @@ app.use(cors()); // Enable CORS for all routes
 
 const port = 3000;
 
-// Sync models and connect to the database
-sequelize
-  .sync({ force: false }) // { force: false } ensures tables aren't dropped
-  .then(() => {
-    console.log("Database synced successfully");
-  })
-  .catch((err) => console.error("Database sync failed:", err));
-
-// Retrieve all active fundraisers including the category
 app.get("/fundraisers", async (req, res) => {
   try {
-    const fundraisers = await Fundraiser.findAll({
-      where: { ACTIVE: true }, // Only active fundraisers
-      include: {
-        model: Category,
-        attributes: ["NAME"], // Include only the category name
-      },
-    });
+    const [fundraisers] = await pool.query(`
+      SELECT f.FUNDRAISER_ID, f.ORGANIZER, f.CAPTION, f.TARGET_FUNDING, 
+             f.CURRENT_FUNDING, f.CITY, f.IMAGE_URL, c.NAME as categoryName
+      FROM FUNDRAISER f
+      JOIN CATEGORY c ON f.CATEGORY_ID = c.CATEGORY_ID
+      WHERE f.ACTIVE = 1
+    `);
     res.status(200).json(fundraisers);
   } catch (err) {
     res
@@ -36,10 +27,11 @@ app.get("/fundraisers", async (req, res) => {
   }
 });
 
-// Retrieve all categories
 app.get("/categories", async (req, res) => {
   try {
-    const categories = await Category.findAll();
+    const [categories] = await pool.query(`
+      SELECT * FROM CATEGORY
+    `);
     res.status(200).json(categories);
   } catch (err) {
     res
@@ -47,36 +39,52 @@ app.get("/categories", async (req, res) => {
       .json({ message: "Failed to retrieve categories", error: err.message });
   }
 });
-app.get("/search", async (req, res) => {
-  const { categoryId, city, organizer, minGoal, maxGoal } = req.query; // Include organizer
-  const searchCriteria = {
-    ACTIVE: true,
-  };
 
-  // Add search criteria
+app.get("/search", async (req, res) => {
+  const { categoryId, city, organizer, minGoal, maxGoal } = req.query;
+
+  // Start building the base SQL query
+  let query = `
+    SELECT f.FUNDRAISER_ID, f.ORGANIZER, f.CAPTION, f.TARGET_FUNDING, 
+           f.CURRENT_FUNDING, f.CITY, f.IMAGE_URL, c.NAME as categoryName
+    FROM FUNDRAISER f
+    JOIN CATEGORY c ON f.CATEGORY_ID = c.CATEGORY_ID
+    WHERE f.ACTIVE = 1
+  `;
+
+  // Array to store query parameters for prepared statement
+  const queryParams = [];
+
+  // Add search criteria to the query dynamically
   if (categoryId) {
-    searchCriteria.CATEGORY_ID = categoryId.split(","); // Handle multiple categories
+    const categories = categoryId.split(",");
+    query += ` AND f.CATEGORY_ID IN (${categories.map(() => "?").join(",")}) `;
+    queryParams.push(...categories);
   }
-  if (city) searchCriteria.CITY = city;
-  if (organizer) searchCriteria.ORGANIZER = organizer; // Include organizer criteria
+
+  if (city) {
+    query += ` AND f.CITY = ? `;
+    queryParams.push(city);
+  }
+
+  if (organizer) {
+    query += ` AND f.ORGANIZER = ? `;
+    queryParams.push(organizer);
+  }
+
   if (minGoal && maxGoal) {
-    searchCriteria.TARGET_FUNDING = {
-      [Op.between]: [minGoal, maxGoal],
-    };
+    query += ` AND f.TARGET_FUNDING BETWEEN ? AND ? `;
+    queryParams.push(minGoal, maxGoal);
   } else if (minGoal) {
-    searchCriteria.TARGET_FUNDING = { [Op.gte]: minGoal };
+    query += ` AND f.TARGET_FUNDING >= ? `;
+    queryParams.push(minGoal);
   } else if (maxGoal) {
-    searchCriteria.TARGET_FUNDING = { [Op.lte]: maxGoal };
+    query += ` AND f.TARGET_FUNDING <= ? `;
+    queryParams.push(maxGoal);
   }
 
   try {
-    const fundraisers = await Fundraiser.findAll({
-      where: searchCriteria,
-      include: {
-        model: Category,
-        attributes: ["NAME"],
-      },
-    });
+    const [fundraisers] = await pool.query(query, queryParams);
     res.status(200).json(fundraisers);
   } catch (err) {
     res
@@ -85,24 +93,25 @@ app.get("/search", async (req, res) => {
   }
 });
 
-// Retrieve fundraiser details by ID
 app.get("/fundraiser/:id", async (req, res) => {
-  const fundraiserId = req.params.id;
-
+  const { id } = req.params;
   try {
-    const fundraiser = await Fundraiser.findOne({
-      where: { FUNDRAISER_ID: fundraiserId },
-      include: {
-        model: Category,
-        attributes: ["NAME"], // Include category name
-      },
-    });
+    const [fundraiser] = await pool.query(
+      `
+      SELECT f.FUNDRAISER_ID, f.ORGANIZER, f.CAPTION, f.TARGET_FUNDING, 
+             f.CURRENT_FUNDING, f.CITY, f.IMAGE_URL, c.NAME as categoryName
+      FROM FUNDRAISER f
+      JOIN CATEGORY c ON f.CATEGORY_ID = c.CATEGORY_ID
+      WHERE f.FUNDRAISER_ID = ? AND f.ACTIVE = 1
+    `,
+      [id]
+    );
 
-    if (!fundraiser) {
+    if (fundraiser.length === 0) {
       return res.status(404).json({ message: "Fundraiser not found" });
     }
 
-    res.status(200).json(fundraiser);
+    res.status(200).json(fundraiser[0]);
   } catch (err) {
     res
       .status(500)

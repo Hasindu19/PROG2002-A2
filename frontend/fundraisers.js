@@ -19,7 +19,7 @@ function displayFundraisers(fundraisers) {
     fundraiserDiv.classList.add("team-setup");
 
     // Check if the fundraiser has an associated Category
-    const categoryName = fundraiser.Category.NAME;
+    const categoryName = fundraiser.categoryName;
 
     fundraiserDiv.innerHTML = `
             <div class="team-items">
