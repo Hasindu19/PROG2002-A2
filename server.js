@@ -1,8 +1,6 @@
 const express = require("express");
 const cors = require("cors"); // Add CORS middleware
-const { Fundraiser, Category } = require("./models"); // Import models
-const { Op } = require("sequelize"); // Import Sequelize Op for search queries
-const pool = require("./config/crowdfunding_db"); // Adjust this path to where your pool is defined
+const connection = require("./config/crowdfunding_db");
 
 const app = express();
 app.use(express.json());
@@ -10,37 +8,41 @@ app.use(cors()); // Enable CORS for all routes
 
 const port = 3000;
 
-app.get("/fundraisers", async (req, res) => {
-  try {
-    const [fundraisers] = await pool.query(`
-      SELECT f.FUNDRAISER_ID, f.ORGANIZER, f.CAPTION, f.TARGET_FUNDING, 
-             f.CURRENT_FUNDING, f.CITY, f.IMAGE_URL, c.NAME as categoryName
-      FROM FUNDRAISER f
-      JOIN CATEGORY c ON f.CATEGORY_ID = c.CATEGORY_ID
-      WHERE f.ACTIVE = 1
-    `);
+app.get("/fundraisers", (req, res) => {
+  const query = `
+    SELECT f.FUNDRAISER_ID, f.ORGANIZER, f.CAPTION, f.TARGET_FUNDING, 
+           f.CURRENT_FUNDING, f.CITY, f.IMAGE_URL, c.NAME as categoryName
+    FROM FUNDRAISER f
+    JOIN CATEGORY c ON f.CATEGORY_ID = c.CATEGORY_ID
+    WHERE f.ACTIVE = 1
+  `;
+
+  connection.query(query, (err, fundraisers) => {
+    if (err) {
+      return res.status(500).json({
+        message: "Failed to retrieve fundraisers",
+        error: err.message,
+      });
+    }
     res.status(200).json(fundraisers);
-  } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Failed to retrieve fundraisers", error: err.message });
-  }
+  });
 });
 
-app.get("/categories", async (req, res) => {
-  try {
-    const [categories] = await pool.query(`
-      SELECT * FROM CATEGORY
-    `);
+app.get("/categories", (req, res) => {
+  const query = `SELECT * FROM CATEGORY`;
+
+  connection.query(query, (err, categories) => {
+    if (err) {
+      return res.status(500).json({
+        message: "Failed to retrieve categories",
+        error: err.message,
+      });
+    }
     res.status(200).json(categories);
-  } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Failed to retrieve categories", error: err.message });
-  }
+  });
 });
 
-app.get("/search", async (req, res) => {
+app.get("/search", (req, res) => {
   const { categoryId, city, organizer, minGoal, maxGoal } = req.query;
 
   // Start building the base SQL query
@@ -83,40 +85,41 @@ app.get("/search", async (req, res) => {
     queryParams.push(maxGoal);
   }
 
-  try {
-    const [fundraisers] = await pool.query(query, queryParams);
+  connection.query(query, queryParams, (err, fundraisers) => {
+    if (err) {
+      return res.status(500).json({
+        message: "Failed to retrieve fundraisers",
+        error: err.message,
+      });
+    }
     res.status(200).json(fundraisers);
-  } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Failed to retrieve fundraisers", error: err.message });
-  }
+  });
 });
 
-app.get("/fundraiser/:id", async (req, res) => {
+app.get("/fundraiser/:id", (req, res) => {
   const { id } = req.params;
-  try {
-    const [fundraiser] = await pool.query(
-      `
-      SELECT f.FUNDRAISER_ID, f.ORGANIZER, f.CAPTION, f.TARGET_FUNDING, 
-             f.CURRENT_FUNDING, f.CITY, f.IMAGE_URL, c.NAME as categoryName
-      FROM FUNDRAISER f
-      JOIN CATEGORY c ON f.CATEGORY_ID = c.CATEGORY_ID
-      WHERE f.FUNDRAISER_ID = ? AND f.ACTIVE = 1
-    `,
-      [id]
-    );
+  const query = `
+    SELECT f.FUNDRAISER_ID, f.ORGANIZER, f.CAPTION, f.TARGET_FUNDING, 
+           f.CURRENT_FUNDING, f.CITY, f.IMAGE_URL, c.NAME as categoryName
+    FROM FUNDRAISER f
+    JOIN CATEGORY c ON f.CATEGORY_ID = c.CATEGORY_ID
+    WHERE f.FUNDRAISER_ID = ? AND f.ACTIVE = 1
+  `;
+
+  connection.query(query, [id], (err, fundraiser) => {
+    if (err) {
+      return res.status(500).json({
+        message: "Failed to retrieve fundraiser",
+        error: err.message,
+      });
+    }
 
     if (fundraiser.length === 0) {
       return res.status(404).json({ message: "Fundraiser not found" });
     }
 
     res.status(200).json(fundraiser[0]);
-  } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Failed to retrieve fundraiser", error: err.message });
-  }
+  });
 });
 
 // Start the server
