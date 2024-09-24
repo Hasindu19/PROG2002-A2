@@ -99,7 +99,7 @@ app.get("/search", (req, res) => {
 app.get("/fundraiser/:id", (req, res) => {
   const { id } = req.params;
   const query = `
-    SELECT f.FUNDRAISER_ID, f.ORGANIZER, f.CAPTION, f.TARGET_FUNDING, 
+    SELECT f.FUNDRAISER_ID, f.ORGANIZER, f.CAPTION, f.TARGET_FUNDING,f.ACTIVE, 
            f.CURRENT_FUNDING, f.CITY, f.IMAGE_URL, c.NAME as categoryName
     FROM FUNDRAISER f
     JOIN CATEGORY c ON f.CATEGORY_ID = c.CATEGORY_ID

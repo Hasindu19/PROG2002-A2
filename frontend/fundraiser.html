@@ -123,15 +123,17 @@
       // Fetch fundraiser details using the fundraiserId
       $.get(`http://localhost:3000/fundraiser/${fundraiserId}`)
         .done(function (data) {
+          console.log(data)
           // Assuming data returns an object with the fundraiser details
           if (data) {
             $('#fundraiserInfo').html(`
+            <p><strong>Caption:</strong> ${data.CAPTION}</p>
               <p><strong>Organizer:</strong> ${data.ORGANIZER}</p>
               <p><strong>City:</strong> ${data.CITY}</p>
               <p><strong>Category:</strong> ${data.categoryName}</p>
               <p><strong>Goal:</strong> $${data.TARGET_FUNDING}</p>
               <p><strong>Current Funding:</strong> $${data.CURRENT_FUNDING}</p>
-              <p><strong>Status:</strong> ${data.ACTIVE ? 'Active' : 'Inactive'}</p>
+              <p><strong>Status:</strong> ${data.ACTIVE === 1 ? 'Active' : 'Inactive'}</p>
             `);
           } else {
             $('#fundraiserInfo').html('<div class="alert alert-danger">Fundraiser not found.</div>');
